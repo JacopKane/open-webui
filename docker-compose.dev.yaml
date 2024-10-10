@@ -1,0 +1,75 @@
+name: open-webui-dev
+
+services:
+  # ollama:
+  #   ports:
+  #     - 7869:11434
+  #   volumes:
+  #     - ollama:/root/.ollama
+  #   container_name: ollama
+  #   tty: true
+  #   restart: always
+  #   image: ollama/ollama:${OLLAMA_DOCKER_TAG-latest}
+  #   environment:
+  #     - OLLAMA_KEEP_ALIVE=24h
+  #     - OLLAMA_HOST=0.0.0.0
+  #   networks:
+  #     - ollama-docker
+
+  frontend:
+    build:
+      context: .
+      target: build
+    command: ['npm', 'run', 'dev']
+    depends_on:
+      - backend
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    ports:
+      - '3000:5173'
+    develop:
+      watch:
+        - action: sync
+          path: /Volumes/open-webui/src
+          target: /app/src
+        - action: rebuild
+          path: package.json
+
+  backend:
+    build:
+      context: .
+      target: base
+    command: ['bash', 'dev.sh']
+    env_file: '.env'
+    environment:
+      - ENV=dev
+      - WEBUI_AUTH=False
+    volumes:
+      - data:/app/backend/data
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    ports:
+      - '8080:8080'
+    restart: always
+    develop:
+      watch:
+        - action: sync
+          path: /Volumes/open-webui/backend
+          target: /app/backend
+          ignore:
+            - backend/data
+        - action: rebuild
+          path: backend/requirements.txt
+    networks:
+      - ollama-docker
+
+  open-webui:
+    image: 699475944512.dkr.ecr.eu-central-1.amazonaws.com/open-webui-repo
+
+volumes:
+  data: {}
+  ollama: {}
+
+networks:
+  ollama-docker:
+    external: false
