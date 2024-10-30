@@ -1,6 +1,7 @@
 name: open-webui-dev
 
 services:
+  # ollama service is commented out but kept for reference
   # ollama:
   #   ports:
   #     - 7869:11434
@@ -20,17 +21,18 @@ services:
     build:
       context: .
       target: build
+    env_file: '.env'
     command: ['npm', 'run', 'dev']
     depends_on:
       - backend
     extra_hosts:
       - host.docker.internal:host-gateway
     ports:
-      - '3000:5173'
+      - '8000:5173' # Changed from 3000 to 3001
     develop:
       watch:
         - action: sync
-          path: /Volumes/open-webui/src
+          path: ./src # Simplified path
           target: /app/src
         - action: rebuild
           path: package.json
@@ -54,7 +56,7 @@ services:
     develop:
       watch:
         - action: sync
-          path: /Volumes/open-webui/backend
+          path: ./backend # Simplified path
           target: /app/backend
           ignore:
             - backend/data
@@ -63,13 +65,11 @@ services:
     networks:
       - ollama-docker
 
-  open-webui:
-    image: 699475944512.dkr.ecr.eu-central-1.amazonaws.com/open-webui-repo
-
 volumes:
   data: {}
   ollama: {}
 
 networks:
   ollama-docker:
-    external: false
+    name: ollama-docker # Added explicit name
+    driver: bridge # Added explicit driver
